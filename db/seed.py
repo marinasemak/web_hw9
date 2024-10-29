@@ -1,7 +1,7 @@
 import json
 from datetime import datetime
 
-from mongoengine import NotUniqueError, ValidationError
+from mongoengine import NotUniqueError, ValidationError, DoesNotExist
 
 from db import connect_db
 from models import Author, Quote
@@ -37,9 +37,12 @@ def fill_data():
                     quote=el.get("quote"),
                 )
                 quote.save()
-                print(f"Created author: {quote.id}")
+                print(f"Created quote: {quote.id}")
             except ValidationError as e:
                 print(f"Validation Error: {e}")
+            except DoesNotExist as e:
+                print(e, author.fullname)
+
 
 
 if __name__ == "__main__":

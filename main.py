@@ -3,31 +3,19 @@ from bs4 import BeautifulSoup
 import json
 import time
 
-"""
-отримати два файли: qoutes.json, куди помістіть всю інформацію про цитати, з усіх сторінок сайту та authors.json, 
-де буде знаходитись інформація про авторів зазначених цитат. Структура файлів json повинна повністю збігатися 
-з попереднього домашнього завдання. Виконайте раніше написані скрипти для завантаження json файлів у хмарну базу даних 
-для отриманих файлів. Попередня домашня робота повинна коректно працювати з новою отриманою базою даних.
-"""
-
-
-def scrape_authors(author_page_url: str) -> list:
+def scrape_authors(author_page_url: str) -> dict:
     response = requests.get(author_page_url)
     soup = BeautifulSoup(response.text, "lxml")
-    authors_list = []
     author_dict = {
         "fullname": soup.find("h3", class_="author-title").text,
         "born_date": soup.find("span", class_="author-born-date").text,
         "born_location": soup.find("span", class_="author-born-location").text,
         "description": soup.find("div", class_="author-description").text.strip(),
     }
-    if author_dict not in authors_list:
-        authors_list.append(author_dict)
-    # pprint(authors_list)
-    return authors_list
+    return author_dict
 
 
-def scrape_quotes(url: str) -> list:
+def scrape_quotes(url: str) -> tuple:
     response = requests.get(url)
     soup = BeautifulSoup(response.text, "lxml")
     quotes_list = []
@@ -44,10 +32,13 @@ def scrape_quotes(url: str) -> list:
         quotes_list.append(quote_dict)
 
     # Get Author info
+    authors_list = []
     for i in authors:
-        about_url = i.find_next_sibling("a")["href"]
-        author_page_url = "https://quotes.toscrape.com" + about_url
-        authors_list = scrape_authors(author_page_url)
+        if i.text not in authors_list:
+            about_url = i.find_next_sibling("a")["href"]
+            author_page_url = "https://quotes.toscrape.com" + about_url
+            scraped_authors = scrape_authors(author_page_url)
+            authors_list.append(scraped_authors)
 
     # Check for next page
     next_button = soup.find("li", class_="next")
@@ -71,7 +62,7 @@ def scrape_quotes_all_pages():
         all_quotes.extend(quotes)
         all_authors.extend(authors)
         current_url = next_page_url  # Move to the next page
-    # print(all_authors)
+
     # Save quotes to json
     with open("quotes.json", "w", encoding="utf-8") as file:
         json.dump(all_quotes, file, ensure_ascii=False, indent=4)
